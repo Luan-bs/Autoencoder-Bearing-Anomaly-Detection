@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NASA IMS Bearings — Guia Interativo de PHM, Engenharia de Sinais e Autoencoders</title>
+  <meta name="description" content="Plataforma interativa de ensino sobre Detecção Não-Supervisionada de Falhas em Rolamentos usando o dataset NASA IMS, Processamento de Sinais (FFT, Curtose, RMS) e Redes Neurais Autoencoders." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <div class="progress-bar-top" id="scrollProgress"></div>
+
+  <!-- Top Navigation -->
+  <header class="navbar">
+    <div class="nav-container">
+      <a href="#top" class="brand">
+        <span class="brand-badge">NASA IMS · PHM</span>
+        <span>Autoencoder Bearing Lab</span>
+      </a>
+      <nav>
+        <ul class="nav-links" id="navLinks">
+          <li><a href="#data" class="active"><span class="nav-num">01</span> Data & Cinemática</a></li>
+          <li><a href="#features"><span class="nav-num">02</span> Feature Engine</a></li>
+          <li><a href="#phm"><span class="nav-num">03</span> PHM & Protocolo</a></li>
+          <li><a href="#autoencoders"><span class="nav-num">04</span> AI Autoencoders</a></li>
+        </ul>
+      </nav>
+      <div class="nav-actions">
+        <button class="btn-outline" id="btnGlossary" type="button" title="Abrir Glossário Técnico Completo">
+          📖 Glossário
+        </button>
+        <button class="btn-outline" id="btnTheme" type="button" title="Alternar entre Modo Escuro e Modo Claro">
+          ☀️ Modo Claro
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero" id="top">
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow">🔬 Guia Técnico Interativo · Pesquisa Reprodutível</div>
+        <h1>Detecção Não-Supervisionada de Falhas em Rolamentos com <span>Autoencoders</span></h1>
+        <p class="hero-lead">
+          Na indústria real, falhas catastróficas são raras e quase nunca existem milhares de exemplos rotulados de quebra para treinar classificadores supervisionados. Este projeto resolve esse desafio ensinando redes neurais <strong>exclusivamente como um rolamento saudável se comporta</strong> — detectando a degradação incipiente com <strong>74,8 horas de antecedência</strong> através da elevação do erro de reconstrução.
+        </p>
+        <div style="display:flex; gap:0.75rem; flex-wrap:wrap;">
+          <a href="#data" class="btn-outline" style="background:var(--accent-cyan); color:#090d16; border-color:var(--accent-cyan); font-weight:700;">
+            Explorar Simuladores Interativos ↓
+          </a>
+          <a href="#autoencoders" class="btn-outline">
+            Ver Comparativo MLP vs LSTM vs PCA →
+          </a>
+        </div>
+        <div class="hero-kpis">
+          <div class="kpi-card">
+            <div class="kpi-value">984</div>
+            <div class="kpi-label">Snapshots Reais (163,8h até a falha no Set 2)</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-value">20 kHz</div>
+            <div class="kpi-label">Taxa de Amostragem (20.480 pts/arquivo)</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-value">74,83 h</div>
+            <div class="kpi-label">Antecedência (RUL) no 1º Alarme do Autoencoder</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-value">1,0000</div>
+            <div class="kpi-label">ROC-AUC (Validação vs Degradação em Conv1D/LSTM)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mini Interactive Architecture Overview Card -->
+      <div class="info-card">
+        <h3>⚙️ O Pipeline em 4 Estágios</h3>
+        <p style="font-size:0.86rem;">
+          Ao contrário de abordagens caixa-preta que jogam o sinal bruto sem critério na rede, este estudo combina <strong>física de máquinas rotativas</strong> com <strong>aprendizado profundo não-supervisionado</strong>:
+        </p>
+        <div style="display:flex; flex-direction:column; gap:0.65rem; margin-top:0.8rem;">
+          <div class="readout-item" style="border-left:3px solid var(--accent-cyan);">
+            <div class="r-label">1. Aquisição Física (NASA IMS Set 2)</div>
+            <div style="font-size:0.85rem; color:var(--text-primary);">4 rolamentos Rexnord ZA-2115 a 2.000 RPM sob 6.000 lbs. Falha natural na pista externa do Rolamento 1 (<code style="color:var(--accent-cyan);">BPFO ≈ 236,4 Hz</code>).</div>
+          </div>
+          <div class="readout-item" style="border-left:3px solid var(--accent-amber);">
+            <div class="r-label">2. Feature Engine (20.480 pts → 11 Features)</div>
+            <div style="font-size:0.85rem; color:var(--text-primary);">Extração de 5 métricas no tempo (RMS, Curtose, Peak, P2P, Crest Factor) + 6 bandas espectrais via FFT.</div>
+          </div>
+          <div class="readout-item" style="border-left:3px solid var(--accent-green);">
+            <div class="r-label">3. Protocolo PHM Estritamente Temporal</div>
+            <div style="font-size:0.85rem; color:var(--text-primary);">Treino saudável (<code>0..400</code>) + padronização Z-Score (<code>StandardScaler</code>) sem vazamento de dados futuros.</div>
+          </div>
+          <div class="readout-item" style="border-left:3px solid var(--accent-purple);">
+            <div class="r-label">4. Compressão Não-Linear em Autoencoders</div>
+            <div style="font-size:0.85rem; color:var(--text-primary);">Gargalo latente (<code>11 → 4 → 11</code>) com explicabilidade exata feature a feature no instante do alarme.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- CHAPTER 1: DATA & BEARING KINEMATICS                                  -->
+  <!-- ===================================================================== -->
+  <section class="chapter" id="data">
+    <div class="chapter-header">
+      <span class="chapter-tag">Capítulo 01 · Data & Física Mecânica</span>
+      <h2 class="chapter-title">De Onde Vêm os Dados: A Bancada NASA IMS e a Cinemática da Falha</h2>
+      <p class="chapter-desc">
+        Antes de qualquer equação de Inteligência Artificial, é fundamental compreender o sistema físico que gera os sinais de vibração. O dataset <strong>NASA IMS Bearings</strong> foi coletado pelo <em>Center for Intelligent Maintenance Systems</em> (University of Cincinnati) em ensaios reais de vida completa até a quebra (<em>Run-to-Failure</em>).
+      </p>
+    </div>
+
+    <div class="lab-grid">
+      <div class="theory-panel">
+        <div class="info-card">
+          <h3>🔩 A Bancada Experimental e os 3 Testes</h3>
+          <p>
+            Quatro rolamentos de rolos de dupla fileira <strong>Rexnord ZA-2115</strong> são montados em um único eixo acionado por um motor elétrico a <strong>2.000 RPM constantes</strong>, submetidos a uma carga radial pesada de <strong>6.000 lbs (2.721 kg)</strong>. Acelerômetros de quartzo de alta sensibilidade (PCB 353B33) registram snapshots de <strong>20.480 pontos</strong> a <strong>20.000 Hz</strong> (duração de $\approx 1,024\text{ s}$) a cada 10 minutos.
+          </p>
+          <div class="img-showcase">
+            <figure class="img-card">
+              <img src="assets/IMS_testsetup.webp" alt="Bancada de Testes NASA IMS" loading="lazy" />
+              <figcaption>Bancada NASA IMS: Motor, eixo, 4 rolamentos e acelerômetros.</figcaption>
+            </figure>
+            <figure class="img-card">
+              <img src="assets/bearing.webp" alt="Anatomia interna de um rolamento" loading="lazy" />
+              <figcaption>Anatomia: Pista externa (fixa), pista interna (gira), rolos e gaiola.</figcaption>
+            </figure>
+          </div>
+          <div class="data-table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Conjunto</th>
+                  <th>Arquivos</th>
+                  <th>Canais</th>
+                  <th>Falha Real ao Final do Ensaio</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>1st_test</code></td>
+                  <td>2.156</td>
+                  <td>8 (X+Y)</td>
+                  <td>B3 (Pista Interna) e B4 (Elemento Rolante)</td>
+                </tr>
+                <tr class="highlight-row">
+                  <td><strong><code>2nd_test</code> (Foco)</strong></td>
+                  <td><strong>984</strong></td>
+                  <td><strong>4 (1/rol.)</strong></td>
+                  <td><strong>Rolamento 1 — Pista Externa (<span class="badge badge-cyan">BPFO</span>)</strong></td>
+                </tr>
+                <tr>
+                  <td><code>3rd_test</code></td>
+                  <td>4.448</td>
+                  <td>4 (1/rol.)</td>
+                  <td>Rolamento 3 — Pista Externa</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="info-card">
+          <h3>📐 Como nasce a Frequência de Falha BPFO ($236,4\text{ Hz}$)?</h3>
+          <p>
+            Uma dúvida clássica de quem inicia na área é: <em>"Se a pista externa fica presa na carcaça e não gira ($0\text{ RPM}$), como a falha na pista externa tem uma frequência em Hertz?"</em>
+          </p>
+          <p>
+            A unidade $\text{Hz}$ (eventos por segundo) mede a <strong>taxa de repetição dos impactos mecânicos</strong>: cada vez que um dos $N_b = 16$ rolos passa por cima da trinca na pista externa, ocorre um micro-choque metálico. Para o rolamento Rexnord ZA-2115 ($N_b = 16$, diâmetro do rolo $d = 8,41\text{ mm}$, diâmetro primitivo $D = 71,50\text{ mm}$, ângulo $\theta = 0^\circ$):
+          </p>
+          <div class="formula-box" id="mathBpfo">
+            $$f_r = \frac{\text{RPM}}{60} = \frac{2000}{60} \approx 33,33\text{ Hz}$$
+            $$\text{BPFO} = \frac{N_b}{2} \cdot f_r \cdot \left(1 - \frac{d}{D}\cos\theta\right) = 8 \cdot 33,33 \cdot (1 - 0,1135) \approx 236,4\text{ Hz}$$
+          </div>
+          <div class="callout callout-ok">
+            <strong>💡 Teste no Simulador ao lado:</strong> Aumente a severidade da trinca na pista externa e veja como cada passagem de esfera sobre o defeito dispara um pulso de impacto a exatos $236,4\text{ Hz}$ (cerca de 1 impacto a cada $4,23\text{ ms}$) no acelerômetro!
+          </div>
+        </div>
+      </div>
+
+      <!-- SIMULATOR 1: Interactive Bearing Kinematics & Impact Oscilloscope -->
+      <div class="sim-box">
+        <div class="sim-header">
+          <div class="sim-title">
+            <span class="status-dot" id="bearingStatusDot"></span>
+            Simulador 01 · Cinemática do Rolamento ZA-2115 & Acelerômetro
+          </div>
+          <span class="badge badge-cyan" id="bearingModeBadge">Pista Externa (BPFO)</span>
+        </div>
+
+        <div class="canvas-wrap">
+          <canvas id="bearingCanvas" width="680" height="390"></canvas>
+        </div>
+
+        <div class="readout-strip">
+          <div class="readout-item">
+            <div class="r-label">Rotação ($f_r$)</div>
+            <div class="r-val" id="readFr">33.33 Hz</div>
+          </div>
+          <div class="readout-item">
+            <div class="r-label">BPFO (Externa)</div>
+            <div class="r-val" id="readBpfo" style="color:var(--accent-cyan);">236.4 Hz</div>
+          </div>
+          <div class="readout-item">
+            <div class="r-label">BPFI (Interna)</div>
+            <div class="r-val" id="readBpfi">296.9 Hz</div>
+          </div>
+          <div class="readout-item">
+            <div class="r-label">2×BSF (Rolo)</div>
+            <div class="r-val" id="readBsf">278.4 Hz</div>
+          </div>
+          <div class="readout-item">
+            <div class="r-label">Intervalo Choque</div>
+            <div class="r-val" id="readShockDt">4.23 ms</div>
+          </div>
+        </div>
+
+        <div class="controls-grid">
+          <div class="control-group">
+            <div class="control-label">
+              <span>Velocidade do Eixo (RPM)</span>
+              <span class="control-val" id="valRpm">2000 RPM</span>
+            </div>
+            <input type="range" id="sliderRpm" min="600" max="3000" step="50" value="2000" />
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>Severidade da Trinca / Defeito</span>
+              <span class="control-val" id="valCrack">45% (Incipiente)</span>
+            </div>
+            <input type="range" id="sliderCrack" min="0" max="100" step="5" value="45" />
+          </div>
+
+          <div class="control-group">
+            <div class="control-label">
+              <span>Câmera Lenta Visual (Slow-Mo)</span>
+              <span class="control-val" id="valSlowMo">120× mais lento</span>
+            </div>
+            <input type="range" id="sliderSlowMo" min="30" max="240" step="10" value="120" />
+          </div>
+        </div>
+
+        <div class="preset-pills" id="faultModePills">
+          <button type="button" class="pill-btn" data-fault="healthy">🟢 Rolamento Saudável (0% Trinca)</button>
+          <button type="button" class="pill-btn active" data-fault="bpfo">🔴 Defeito Pista Externa (BPFO · Set 2)</button>
+          <button type="button" class="pill-btn" data-fault="bpfi">🟠 Defeito Pista Interna (BPFI · Set 1)</button>
+          <button type="button" class="pill-btn" data-fault="bsf">🟣 Defeito no Elemento Rolante (2×BSF)</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- CHAPTER 2: FEATURE ENGINE                                             -->
+  <!-- ===================================================================== -->
+  <section class="chapter" id="features">
+    <div class="chapter-header">
+      <span class="chapter-tag">Capítulo 02 · Feature Engine & Processamento de Sinais</span>
+      <h2 class="chapter-title">Transformando 20.480 Pontos de Vibração em 11 Features Físicas</h2>
+      <p class="chapter-desc">
+        Alimentar um autoencoder diretamente com 20.480 pontos brutos por segundo faz a rede tentar reconstruir fase aleatória e ruído de fundo. Em vez disso, nosso <strong>Feature Engine</strong> extrai <strong>11 indicadores estatísticos e espectrais</strong> por canal que capturam a assinatura energética e impulsiva do rolamento, seguidos por padronização <strong>Z-Score (<code>StandardScaler</code>)</strong>.
+      </p>
+    </div>
+
+    <div class="lab-grid">
+      <div class="theory-panel">
+        <div class="info-card">
+          <h3>📊 As 5 Features do Domínio do Tempo + 6 Bandas FFT</h3>
+          <p>
+            Cada métrica enxerga um aspecto físico complementar da deterioração mecânica:
+          </p>
+          <div class="formula-box">
+            $$\text{RMS} = \sqrt{\frac{1}{N}\sum_{i=1}^N x_i^2} \quad \Big| \quad \text{Kurtosis} = \frac{\frac{1}{N}\sum (x_i - \bar{x})^4}{\left(\frac{1}{N}\sum (x_i - \bar{x})^2\right)^2} \quad \Big| \quad \text{CF} = \frac{\text{Peak}}{\text{RMS}}$$
+          </div>
+          <ul style="padding-left:1.2rem; color:var(--text-secondary); font-size:0.9rem; display:flex; flex-direction:column; gap:0.45rem;">
+            <li><strong>Curtose (Kurtosis) & Crest Factor:</strong> Sensíveis ao <em>início da falha</em>. Microtrincas geram choques isolados que criam "caudas pesadas" na distribuição (elevando a curtose acima do baseline empírico $\approx 3,43$) muito antes de a energia global subir.</li>
+            <li><strong>RMS, Peak e Peak-to-Peak (P2P):</strong> Medem a severidade energética global, disparando com força quando a trinca se espalha (<em>spalling</em>).</li>
+            <li><strong>6 Bandas de Energia FFT ($\Delta f \approx 0,977\text{ Hz}$):</strong> Integram $\sum |X(f_k)|^2$ nas faixas <code>low</code> ($0\text{–}500\text{ Hz}$), <code>mid</code> ($500\text{–}2000\text{ Hz}$), <code>high</code> ($2000\text{–}5000\text{ Hz}$, ressonância estrutural do mancal) e nas janelas de $\pm 8,5\%$ em torno de <code>bpfo</code> ($216\text{–}256\text{ Hz}$), <code>bpfi</code> ($272\text{–}322\text{ Hz}$) e <code>bsf2x</code> ($255\text{–}302\text{ Hz}$).</li>
+          </ul>
+        </div>
+
+        <div class="info-card">
+          <h3>🕵️ O Paradoxo do Rolamento 3: Por que Limiares Fixos Falham?</h3>
+          <p>
+            Uma descoberta crucial da nossa Análise Exploratória (EDA) no <code>2nd_test</code>: durante todo o período saudável (<code>0..400</code>), o <strong>Rolamento 3 (que NÃO falhou!)</strong> apresenta Curtose média de <strong>$4,53$</strong> (máx $6,70$) e energia na banda BPFO <strong>$10\times$ maior</strong> ($75.908$) que o Rolamento 1 ($7.835$, Curtose $3,43$)!
+          </p>
+          <p>
+            <strong>A Causa Física:</strong> O mecanismo de carga radial de 6.000 lbs aplica força diretamente próximo ao mancal 3, excitando o <strong>7º harmônico da rotação do eixo</strong> ($7 \times 33,06\text{ Hz} = 231,4\text{ Hz}$). Como a janela da banda <code>bpfo</code> vai de $216\text{ a }256\text{ Hz}$, esse pico estrutural estacionário cai dentro da banda desde o minuto zero!
+          </p>
+          <div class="callout callout-warn">
+            <strong>⚠️ Lição para Engenharia & IA:</strong> Se usássemos uma regra fixa como <em>"Curtose > 4,5 = Alarme"</em>, o Rolamento 3 saudável dispararia falso alarme o tempo todo! Ao aplicar o <strong><code>StandardScaler</code> (Z-Score) ajustado individualmente nos primeiros 400 arquivos de cada canal</strong>, o modelo aprende o baseline próprio de cada posição de sensor:
+            $$z_j = \frac{x_j - \mu_{\text{treino}, j}}{\sigma_{\text{treino}, j}}$$
+          </div>
+        </div>
+      </div>
+
+      <!-- SIMULATOR 2: Signal & FFT Lab + Bearing 1..4 Paradox Explorer -->
+      <div class="sim-box">
+        <div class="sim-header">
+          <div class="sim-title">
+            <span class="status-dot" id="fftStatusDot"></span>
+            Simulador 02 · Laboratório de Sinais, Bandas FFT & Paradoxo B3 vs B1
+          </div>
+          <div style="display:flex; gap:0.35rem;">
+            <button type="button" class="pill-btn active" id="tabSimSignal">🎛️ Sintetizador FFT</button>
+            <button type="button" class="pill-btn" id="tabRealChannels">📊 Dados Reais: B1 vs B2 vs B3 vs B4</button>
+          </div>
+        </div>
+
+        <!-- Panel A: Synthetic Signal + FFT -->
+        <div id="panelSimSignal">
+          <div class="canvas-wrap">
+            <canvas id="fftCanvas" width="680" height="360"></canvas>
+          </div>
+
+          <div class="readout-strip">
+            <div class="readout-item">
+              <div class="r-label">RMS</div>
+              <div class="r-val" id="featRms">0.077 g</div>
+            </div>
+            <div class="readout-item">
+              <div class="r-label">Curtose (Pearson)</div>
+              <div class="r-val" id="featKurt">3.43</div>
+            </div>
+            <div class="readout-item">
+              <div class="r-label">Crest Factor</div>
+              <div class="r-val" id="featCf">5.21</div>
+            </div>
+            <div class="readout-item">
+              <div class="r-label">Energia BPFO</div>
+              <div class="r-val" id="featEbpfo" style="color:var(--accent-cyan);">7.8k</div>
+            </div>
+            <div class="readout-item">
+              <div class="r-label">Energia High (2-5kHz)</div>
+              <div class="r-val" id="featEhigh" style="color:var(--accent-amber);">610k</div>
+            </div>
+          </div>
+
+          <div class="controls-grid">
+            <div class="control-group">
+              <div class="control-label">
+                <span>Choques Periódicos BPFO (236,4 Hz)</span>
+                <span class="control-val" id="valSimPulse">0%</span>
+              </div>
+              <input type="range" id="sliderSimPulse" min="0" max="100" step="5" value="0" />
+            </div>
+            <div class="control-group">
+              <div class="control-label">
+                <span>Ressonância Alta Freq. (2.000–5.000 Hz)</span>
+                <span class="control-val" id="valSimRes">15%</span>
+              </div>
+              <input type="range" id="sliderSimRes" min="0" max="100" step="5" value="15" />
+            </div>
+            <div class="control-group">
+              <div class="control-label">
+                <span>7º Harmônico Eixo (231,4 Hz · Efeito B3)</span>
+                <span class="control-val" id="valSimHarm">0%</span>
+              </div>
+              <input type="range" id="sliderSimHarm" min="0" max="100" step="5" value="0" />
+            </div>
+          </div>
+
+          <div class="preset-pills" id="fftPresetPills">
+            <button type="button" class="pill-btn active" data-preset="b1_healthy">🟢 B1 Saudável (idx=100)</button>
+            <button type="button" class="pill-btn" data-preset="b3_paradox">🟡 Paradoxo B3 Saudável (7º Harmônico 231,4 Hz)</button>
+            <button type="button" class="pill-btn" data-preset="b1_incipient">🟠 B1 Início de Trinca (idx=532 · Ressonância High)</button>
+            <button type="button" class="pill-btn" data-preset="b1_severe">🔴 B1 Falha Severa (idx=975 · Spalling)</button>
+          </div>
+        </div>
+
+        <!-- Panel B: Real 4 Bearings Comparison -->
+        <div id="panelRealChannels" style="display:none;">
+          <div class="canvas-wrap">
+            <canvas id="channelsCanvas" width="680" height="360"></canvas>
+          </div>
+          <div class="controls-grid">
+            <div class="control-group">
+              <div class="control-label">
+                <span>Métrica Comparada nos 4 Canais</span>
+              </div>
+              <div class="preset-pills" style="margin-top:0.2rem;" id="channelMetricPills">
+                <button type="button" class="pill-btn active" data-cmetric="rms">RMS (g)</button>
+                <button type="button" class="pill-btn" data-cmetric="kurtosis">Curtose</button>
+                <button type="button" class="pill-btn" data-cmetric="bpfo">Energia Banda BPFO</button>
+              </div>
+            </div>
+            <div class="control-group">
+              <div class="control-label">
+                <span>Escala de Visualização</span>
+              </div>
+              <div class="preset-pills" style="margin-top:0.2rem;" id="channelScalePills">
+                <button type="button" class="pill-btn active" data-cscale="raw">Valores Físicos Brutos (Mostra Paradoxo B3)</button>
+                <button type="button" class="pill-btn" data-cscale="zscore">Padronizado Z-Score no Treino (Corrige Baseline)</button>
+              </div>
+            </div>
+          </div>
+          <p style="font-size:0.8rem; color:var(--text-secondary); margin-top:0.75rem;">
+            💡 <strong>Observe nos dados reais:</strong> Na escala física bruta, a curva amarela (<strong>Rolamento 3</strong>) fica acima da curva azul (<strong>Rolamento 1</strong>) durante quase todo o ensaio, mas permanece <em>estacionária</em>. Quando mudamos para <strong>Z-Score ajustado no treino (0..400)</strong>, todos os canais partem do mesmo centro $0\sigma$ e apenas o Rolamento 1 explode na degradação!
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- CHAPTER 3: PHM & TEMPORAL PROTOCOL                                    -->
+  <!-- ===================================================================== -->
+  <section class="chapter" id="phm">
+    <div class="chapter-header">
+      <span class="chapter-tag">Capítulo 03 · PHM (Prognostics and Health Management)</span>
+      <h2 class="chapter-title">Anatomia dos 984 Snapshots, Fenômeno de Healing e Prevenção de Data Leakage</h2>
+      <p class="chapter-desc">
+        Em séries temporais de degradação mecânica, embaralhar dados aleatoriamente (<code>train_test_split(shuffle=True)</code>) é um erro metodológico fatal: coloca dados do futuro degradado dentro do treino, destruindo a validade científica. Nosso protocolo congela a divisão estritamente em ordem cronológica (<code>configs/labeling.yaml</code>).
+      </p>
+    </div>
+
+    <div class="lab-grid">
+      <div class="theory-panel">
+        <div class="info-card">
+          <h3>🧭 As 5 Zonas Temporais do Set 2 (163,8 Horas Contínuas)</h3>
+          <ul style="padding-left:1.2rem; color:var(--text-secondary); font-size:0.9rem; display:flex; flex-direction:column; gap:0.55rem;">
+            <li><span class="badge badge-green">Treino [0..400] (66,8h)</span> <strong>Regime Saudável Estacionário:</strong> Os autoencoders e o <code>StandardScaler</code> são ajustados <em>exclusivamente</em> aqui. O modelo nunca vê falhas no treino.</li>
+            <li><span class="badge" style="background:rgba(148,163,184,0.2); color:var(--text-secondary);">Zona Cinza [401..450] (8,3h)</span> <strong>Buffer de Isolamento:</strong> Excluída de qualquer cálculo para evitar contaminação de fronteira entre treino e validação.</li>
+            <li><span class="badge badge-cyan">Validação [451..530] (13,3h)</span> <strong>Calibração Cega do Limiar:</strong> Usada apenas para verificar a taxa de falsos alarmes e fixar o limiar (percentil 99 do treino).</li>
+            <li><span class="badge badge-red">Teste / Degradação [531..981] (75,1h)</span> <strong>Da Microtrinca ao Colapso:</strong> No arquivo <strong>532</strong> (~88,6h de ensaio), nasce a falha incipiente na pista externa (confirmada por Qiu et al., 2006). No arquivo <strong>981</strong>, o rolamento colapsa ($\text{RMS} > 0,72\text{ g}$).</li>
+            <li><span class="badge badge-amber">Shutdown [982..983]</span> <strong>Motor Desligado:</strong> Após a falha total, o motor é desligado ($\text{RMS} < 0,002\text{ g}$); descartados da avaliação.</li>
+          </ul>
+        </div>
+
+        <div class="info-card">
+          <h3>🩹 O Fenômeno Mecânico de <em>Healing</em> (Alisamento entre <code>750..880</code>)</h3>
+          <p>
+            Arraste o cursor na linha do tempo ao lado até o arquivo <strong>705</strong> e depois até <strong>820</strong>. Você notará algo fascinante: após a abertura abrupta da trinca em <code>700..720</code> (onde a Curtose salta para $6,9$), a vibração <strong>diminui temporariamente entre os arquivos 750 e 880</strong> antes de explodir novamente no <code>900+</code>!
+          </p>
+          <p>
+            Na tribologia e fadiga de rolamentos, esse fenômeno é conhecido como <strong><em>healing</em> (alisamento mecânico)</strong>: a passagem repetida dos rolos sob 6.000 lbs de carga "lixa" e arredonda momentaneamente as bordas vivas da micro-cratera recém-aberta, suavizando o impacto até que a fadiga subsuperficial cause o lascamento severo (<em>spalling</em>).
+          </p>
+          <div class="callout callout-danger">
+            <strong>🚨 Simule o Data Leakage ao lado:</strong> Ative o botão <em>"Simular Split Aleatório (Data Leakage)"</em> no painel ao lado para ver na prática como misturar dados futuros no <code>StandardScaler</code> infla o desvio padrão $\sigma$ em até $18\times$, cegando o detector para a microtrinca inicial!
+          </div>
+        </div>
+      </div>
+
+      <!-- SIMULATOR 3: Interactive 984-File Timeline Scrubber + Data Leakage Simulator -->
+      <div class="sim-box">
+        <div class="sim-header">
+          <div class="sim-title">
+            <span class="status-dot" id="phmStatusDot"></span>
+            Simulador 03 · Máquina do Tempo (984 Snapshots Reais) & Data Leakage
+          </div>
+          <button type="button" class="pill-btn" id="btnToggleLeakage" style="border-color:var(--accent-red); color:var(--accent-red);">
+            🧪 Simular Erro: Split Aleatório (Data Leakage)
+          </button>
+        </div>
+
+        <div class="canvas-wrap">
+          <canvas id="phmCanvas" width="680" height="360"></canvas>
+        </div>
+
+        <div class="readout-strip">
+          <div class="readout-item">
+            <div class="r-label">Arquivo / Tempo</div>
+            <div class="r-val" id="phmReadIdx">#532 (88.7h)</div>
+          </div>
+          <div class="readout-item">
+            <div class="r-label">Zona do Protocolo</div>
+            <div class="r-val" id="phmReadZone" style="color:var(--accent-red);">TESTE (Degradação)</div>
+          </div>
+          <div class="readout-item">
+            <div class="r-label">RUL Até o Colapso</div>
+            <div class="r-val" id="phmReadRul" style="color:var(--accent-cyan);">74.83 h (449 arq)</div>
+          </div>
+          <div class="readout-item">
+            <div class="r-label">B1 RMS / Curtose</div>
+            <div class="r-val" id="phmReadMetrics">0.080g / 3.58</div>
+          </div>
+          <div class="readout-item">
+            <div class="r-label">Z-Score High Freq</div>
+            <div class="r-val" id="phmReadZ">+4.8 σ</div>
+          </div>
+        </div>
+
+        <div class="controls-grid">
+          <div class="control-group" style="grid-column: 1 / -1;">
+            <div class="control-label">
+              <span>Arraste na Linha do Tempo Real (Arquivo 0 a 983 · 12/Fev a 19/Fev/2004)</span>
+              <span class="control-val" id="valPhmCursor">Idx 532 · 16/02 03:12</span>
+            </div>
+            <input type="range" id="sliderPhmCursor" min="0" max="983" step="1" value="532" />
+          </div>
+        </div>
+
+        <div class="preset-pills" id="phmMilestonePills">
+          <button type="button" class="pill-btn" data-idx="100">🟢 Idx 100 (Saudável Estável)</button>
+          <button type="button" class="pill-btn" data-idx="425">⚪ Idx 425 (Zona Cinza)</button>
+          <button type="button" class="pill-btn" data-idx="480">🔵 Idx 480 (Validação)</button>
+          <button type="button" class="pill-btn active" data-idx="532">⚡ Idx 532 (1º Alarme MLP · Microtrinca)</button>
+          <button type="button" class="pill-btn" data-idx="705">🟠 Idx 705 (Pico Abertura Trinca)</button>
+          <button type="button" class="pill-btn" data-idx="820">🩹 Idx 820 (Fase de Healing / Alisamento)</button>
+          <button type="button" class="pill-btn" data-idx="975">🔴 Idx 975 (Colapso Iminente)</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- CHAPTER 4: AI AUTOENCODERS & BASELINES                                -->
+  <!-- ===================================================================== -->
+  <section class="chapter" id="autoencoders">
+    <div class="chapter-header">
+      <span class="chapter-tag">Capítulo 04 · AI Autoencoders & Explicabilidade</span>
+      <h2 class="chapter-title">O Gargalo Latente ($11 \to 4 \to 11$) e Por Que as Redes Neurais Vencem por +11,5 Horas</h2>
+      <p class="chapter-desc">
+        Comparamos sob protocolo idêntico (3 seeds independentes: <code>42, 123, 456</code>) três arquiteturas de Autoencoders Neurais (<strong>MLP, Conv1D, LSTM</strong>) contra dois algoritmos clássicos de mercado (<strong>PCA</strong> e <strong>Isolation Forest</strong>).
+      </p>
+    </div>
+
+    <div class="lab-grid">
+      <div class="theory-panel">
+        <div class="info-card">
+          <h3>🧠 Como Funciona a Detecção por Erro de Reconstrução?</h3>
+          <p>
+            Um <strong>Autoencoder</strong> possui duas metades simétricas separadas por um <strong>Espaço Latente estreito (Bottleneck de dimensão $d = 4$)</strong>:
+          </p>
+          <div class="formula-box">
+            $$\mathbf{z} = f_{\text{Encoder}}(\mathbf{x}) \in \mathbb{R}^4, \quad \hat{\mathbf{x}} = g_{\text{Decoder}}(\mathbf{z}) \in \mathbb{R}^{11}$$
+            $$\text{Score de Anomalia (MSE)} = \frac{1}{11}\sum_{j=1}^{11} (x_j - \hat{x}_j)^2$$
+          </div>
+          <p>
+            Como a rede é treinada <strong>apenas nos arquivos saudáveis (<code>0..400</code>)</strong> e forçada a comprimir 11 variáveis em apenas 4 números no gargalo com ativações não-lineares (<code>GELU</code>), ela aprende a <em>variedade curva (manifold)</em> exata das correlações normais do rolamento. Quando surge a microtrinca no arquivo <code>532</code>, o padrão de entrada foge dessa superfície aprendida, a reconstrução falha e o erro quadrático explode!
+          </p>
+        </div>
+
+        <div class="info-card">
+          <h3>🔍 Explicabilidade Física: Por que <code>b1_energy_high</code> (57%) e <code>b1_rms</code> (32%) dominam o 1º Alarme?</h3>
+          <p>
+            Uma vantagem decisiva dos Autoencoders é que o erro MSE pode ser decomposto exatamente feature a feature:
+          </p>
+          <div class="formula-box">
+            $$\text{Contribuição}(j) = 100\% \times \frac{(x_j - \hat{x}_j)^2}{\sum_{k=1}^{11} (x_k - \hat{x}_k)^2}$$
+          </div>
+          <p>
+            No instante exato do 1º alarme (<code>idx=532..535</code>), <strong><code>b1_energy_high</code> ($2.000\text{–}5.000\text{ Hz}$) responde por 53% a 59% do erro</strong>, seguida por <strong><code>b1_rms</code> (27% a 33%)</strong>, enquanto a banda direta <code>b1_energy_bpfo</code> ainda está em $+0,04\sigma$!
+          </p>
+          <p>
+            <strong>Por quê?</strong> Conforme demonstrado na literatura clássica de vibrações (Qiu et al., 2006; Randall & Antoni, 2011), os micro-impactos iniciais da esfera na fissura agem como marteladas curtíssimas que <strong>excitam primeiro a ressonância estrutural de alta frequência da carcaça ($2\text{–}5\text{ kHz}$)</strong>. A energia fundamental em $236,4\text{ Hz}$ na FFT direta só ganha amplitude bruta quando a trinca se alarga (após o arquivo <code>646</code>).
+          </p>
+        </div>
+      </div>
+
+      <!-- SIMULATOR 4: Interactive Neural Autoencoder Bottleneck & Model Comparator -->
+      <div class="sim-box">
+        <div class="sim-header">
+          <div class="sim-title">
+            <span class="status-dot" id="aeStatusDot"></span>
+            Simulador 04 · Rede Neural Interativa (11→4→11) & Explicabilidade por Feature
+          </div>
+          <span class="badge badge-cyan" id="aeAlarmBadge">Alarme em Idx 532 (74,83h RUL)</span>
+        </div>
+
+        <!-- Model Selector Pills -->
+        <div class="preset-pills" style="margin-top:0; margin-bottom:0.85rem;" id="modelSelectPills">
+          <button type="button" class="pill-btn active" data-model="mlp">⚡ MLP Autoencoder (L=1 · 1º Alarme Idx 532)</button>
+          <button type="button" class="pill-btn" data-model="lstm">🏆 LSTM Autoencoder (L=5 · Melhor Equilíbrio)</button>
+          <button type="button" class="pill-btn" data-model="conv1d">🌊 Conv1D Autoencoder (L=5 · ROC 1.000)</button>
+          <button type="button" class="pill-btn" data-model="pca">📐 PCA Linear (L=1 · Alarme Idx 601)</button>
+          <button type="button" class="pill-btn" data-model="if">🌲 Isolation Forest (L=1 · Alarme Idx 636)</button>
+        </div>
+
+        <div class="canvas-wrap">
+          <canvas id="aeCanvas" width="680" height="390"></canvas>
+        </div>
+
+        <div class="readout-strip">
+          <div class="readout-item">
+            <div class="r-label">1º Alarme Sustentado</div>
+            <div class="r-val" id="aeReadFirstAlarm" style="color:var(--accent-cyan);">Idx 532</div>
+          </div>
+          <div class="readout-item">
+            <div class="r-label">Antecedência (RUL)</div>
+            <div class="r-val" id="aeReadRul" style="color:var(--accent-green);">74.83 h</div>
+          </div>
+          <div class="readout-item">
+            <div class="r-label">Recall no Teste</div>
+            <div class="r-val" id="aeReadRecall">99.78%</div>
+          </div>
+          <div class="readout-item">
+            <div class="r-label">Falso Alarme (Val)</div>
+            <div class="r-val" id="aeReadFar">5.42%</div>
+          </div>
+          <div class="readout-item">
+            <div class="r-label">Spearman / ROC-AUC</div>
+            <div class="r-val" id="aeReadRoc">0.788 / 0.999</div>
+          </div>
+        </div>
+
+        <div class="controls-grid">
+          <div class="control-group">
+            <div class="control-label">
+              <span>Snapshot Inspecionado na Rede Neural</span>
+              <span class="control-val" id="valAeSnap">Idx 532 (1º Alarme MLP)</span>
+            </div>
+            <input type="range" id="sliderAeSnap" min="0" max="19" step="1" value="7" />
+          </div>
+          <div class="control-group">
+            <div class="control-label">
+              <span>Multiplicador do Limiar (Calibração Val)</span>
+              <span class="control-val" id="valAeThresh">1.00× (Percentil 99)</span>
+            </div>
+            <input type="range" id="sliderAeThresh" min="0.5" max="2.5" step="0.05" value="1.0" />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Consolidated Benchmark Table from docs/baseline_comparison.md -->
+    <div class="info-card" style="margin-top:1rem;">
+      <h3>🏆 Tabela Comparativa Consolidada — 3 Seeds Independentes (<code>42, 123, 456</code>) no Set 2</h3>
+      <p>
+        Todos os modelos foram avaliados sob o mesmo protocolo experimental rigoroso (alarme sustentado = 3 janelas consecutivas acima do percentil 99 do treino):
+      </p>
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Métrica</th>
+              <th>PCA (Linear, L=1)</th>
+              <th>Isolation Forest (L=1)</th>
+              <th>MLP Autoencoder (L=1)</th>
+              <th>Conv1D Autoencoder (L=5)</th>
+              <th>LSTM Autoencoder (L=5)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>1º Alarme Sustentado (<code>idx</code>)</strong></td>
+              <td>601,0 ± 0,0</td>
+              <td>636,0 ± 14,1</td>
+              <td><span class="badge badge-cyan">532,0 ± 0,0</span></td>
+              <td>535,0 ± 0,0 <em>(1ª jan.)</em></td>
+              <td><span class="badge badge-green">535,0 ± 0,0 (1ª jan.)</span></td>
+            </tr>
+            <tr>
+              <td><strong>RUL no 1º Alarme (Antecedência)</strong></td>
+              <td>63,33 ± 0,00 h</td>
+              <td>57,50 ± 2,36 h</td>
+              <td><strong>74,83 ± 0,00 h (449 arq.)</strong></td>
+              <td>74,33 ± 0,00 h (446 arq.)</td>
+              <td><strong>74,33 ± 0,00 h (446 arq.)</strong></td>
+            </tr>
+            <tr>
+              <td><strong>Recall na Degradação (<code>test</code>)</strong></td>
+              <td>86,25% ± 0,00%</td>
+              <td>79,08% ± 1,50%</td>
+              <td><strong>99,78% ± 0,00%</strong></td>
+              <td><strong>100,0% ± 0,0%</strong></td>
+              <td><strong>100,0% ± 0,0%</strong></td>
+            </tr>
+            <tr>
+              <td><strong>Taxa de Falso Alarme (<code>val</code>)</strong></td>
+              <td><strong>1,25% ± 0,00%</strong></td>
+              <td>2,08% ± 0,59%</td>
+              <td>5,42% ± 1,56%</td>
+              <td><span class="badge badge-amber">22,80% ± 1,24%</span></td>
+              <td><strong>3,51% ± 2,24%</strong></td>
+            </tr>
+            <tr>
+              <td><strong>ROC-AUC (Val vs Teste)</strong></td>
+              <td>0,9838 ± 0,0000</td>
+              <td>0,9839 ± 0,0016</td>
+              <td><strong>0,9989 ± 0,0005</strong></td>
+              <td><strong>1,0000 ± 0,0000</strong></td>
+              <td><strong>1,0000 ± 0,0000</strong></td>
+            </tr>
+            <tr>
+              <td><strong>Monotonicidade RUL (Spearman)</strong></td>
+              <td>0,8291 ± 0,0000</td>
+              <td><strong>0,9001 ± 0,0104</strong></td>
+              <td>0,7877 ± 0,0218</td>
+              <td>0,8020 ± 0,0060</td>
+              <td><strong>0,8598 ± 0,0010</strong></td>
+            </tr>
+            <tr>
+              <td><strong>Top Features no 1º Alarme</strong></td>
+              <td><code>rms</code> (35%), <code>high</code> (27%)</td>
+              <td><code>kurtosis</code> (18.5%), <code>rms</code> (18.5%)</td>
+              <td><code>high</code> (57.4%), <code>rms</code> (32.1%)</td>
+              <td><code>high</code> (59.3%), <code>rms</code> (27.6%)</td>
+              <td><code>high</code> (53.1%), <code>rms</code> (33.0%)</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Glossary Modal -->
+  <div class="modal-backdrop" id="glossaryModal">
+    <div class="modal-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-color); padding-bottom:0.85rem;">
+        <h3>📖 Glossário Técnico Completo (Mecânica, Sinais, PHM e IA)</h3>
+        <button class="btn-outline" id="btnCloseGlossary" type="button">✕ Fechar</button>
+      </div>
+      <div class="glossary-grid">
+        <div class="glossary-item">
+          <h4>Autoencoder</h4>
+          <p>Rede neural não-supervisionada composta por Encoder, Gargalo Latente ($d \ll D$) e Decoder, treinada para reconstruir sua própria entrada saudável ($\hat{x} \approx x$).</p>
+        </div>
+        <div class="glossary-item">
+          <h4>Espaço Latente (Bottleneck)</h4>
+          <p>Camada estreita central (4 neurônios neste projeto) que força a rede a reter apenas as correlações essenciais do regime saudável, impedindo que ela memorize anomalias.</p>
+        </div>
+        <div class="glossary-item">
+          <h4>BPFO (236,4 Hz)</h4>
+          <p><em>Ball Pass Frequency Outer Race</em>: taxa de repetição de impactos por segundo quando os 16 elementos rolantes passam por uma fissura na pista externa fixa a 2.000 RPM.</p>
+        </div>
+        <div class="glossary-item">
+          <h4>BPFI (296,9 Hz) & 2×BSF (278,4 Hz)</h4>
+          <p>Frequências cinemáticas teóricas de impacto para defeito na pista interna giratória (BPFI) e no próprio elemento rolante (BSF).</p>
+        </div>
+        <div class="glossary-item">
+          <h4>RMS (Valor Eficaz)</h4>
+          <p>Raiz quadrada da média dos quadrados do sinal. Quantifica a energia global contínua da vibração; cresce fortemente em estágios intermediários e severos.</p>
+        </div>
+        <div class="glossary-item">
+          <h4>Curtose (Kurtosis)</h4>
+          <p>Momento estatístico de 4ª ordem que mede o peso das caudas (impulsividade). Uma gaussiana pura tem curtose 3,0; micro-impactos de trinca elevam a curtose rapidamente.</p>
+        </div>
+        <div class="glossary-item">
+          <h4>Fator de Crista (Crest Factor)</h4>
+          <p>Razão entre o pico absoluto máximo e o RMS ($\text{Peak}/\text{RMS}$). Detecta impactos isolados antes de a energia média (RMS) subir.</p>
+        </div>
+        <div class="glossary-item">
+          <h4>FFT (Fast Fourier Transform)</h4>
+          <p>Algoritmo que decompõe o sinal do domínio do tempo para o domínio da frequência, revelando em quais bandas espectrais a energia vibratória se concentra.</p>
+        </div>
+        <div class="glossary-item">
+          <h4>Run-to-Failure & RUL</h4>
+          <p>Ensaio em que o rolamento opera até quebrar naturalmente. RUL (<em>Remaining Useful Life</em>) é o tempo restante do instante do alarme até o colapso físico.</p>
+        </div>
+        <div class="glossary-item">
+          <h4>Healing (Alisamento Mecânico)</h4>
+          <p>Fenômeno real em que a passagem contínua dos rolos arredonda e polir temporariamente as bordas ásperas de uma trinca recém-aberta (arquivos 750 a 880), reduzindo momentaneamente o erro.</p>
+        </div>
+        <div class="glossary-item">
+          <h4>Data Leakage (Vazamento de Dados)</h4>
+          <p>Contaminação metodológica causada por usar informações do futuro ou da degradação durante o ajuste do <code>StandardScaler</code> ou treinamento do modelo.</p>
+        </div>
+        <div class="glossary-item">
+          <h4>Alarme Sustentado</h4>
+          <p>Regra operacional em que o alarme definitivo só é disparado quando $N = 3$ arquivos consecutivos ultrapassam o limiar, evitando falsos positivos por picos isolados.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div>
+      <strong>Projeto Autoencoder NASA IMS Bearings</strong> · Pesquisa em PHM & Aprendizado Profundo Não-Supervisionado
+    </div>
+    <div>
+      Dados Canônicos: NASA Ames / University of Cincinnati IMS · Qiu et al. (2006)
+    </div>
+  </footer>
+
+  <script src="assets/telemetry_data.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+

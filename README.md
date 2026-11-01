@@ -3,6 +3,8 @@
 Detecção não-supervisionada de anomalias em rolamentos industriais via autoencoders neurais e baselines clássicos.  
 Dataset: [NASA IMS Bearings](https://data.nasa.gov/dataset/ims-bearings) — Center for Intelligent Maintenance Systems (IMS), University of Cincinnati.
 
+**Portal Interativo & Simuladores:** [https://luan-bs.github.io/Autoencoder-Bearing-Anomaly-Detection/](https://luan-bs.github.io/Autoencoder-Bearing-Anomaly-Detection/)
+
 > **Projeto de pesquisa em PHM (*Prognostics and Health Management*).** Prioridade: reprodutibilidade estrita, zero vazamento de dados (*data leakage*), explicabilidade física (FFT/BPFO + RUL) e comparabilidade justa entre modelos.
 
 ---
@@ -60,6 +62,12 @@ autoencoder_nasa_ims/
 │       ├── train/                 # 2nd_test_train.csv (saudável: 0..400)
 │       ├── val/                   # 2nd_test_val.csv   (calibração de limiar: 451..530)
 │       └── test/                  # 2nd_test_test.csv  (degradação/falha: 531..981)
+│
+├── frontend/                  # Portal web interativo de ensino (publicado no GitHub Pages)
+│   ├── index.html             # Narrativa didática com teoria, fórmulas KaTeX e simuladores
+│   ├── styles.css             # Tema escuro de telemetria / claro acadêmico responsivo
+│   ├── app.js                 # Motor em HTML5 Canvas dos 4 simuladores manipuláveis
+│   └── assets/                # Telemetria dos 984 arquivos e ilustrações da bancada
 │
 ├── docs/
 │   ├── artigos/                   # Artigos científicos e referências bibliográficas de apoio
